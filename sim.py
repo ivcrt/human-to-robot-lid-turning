@@ -89,11 +89,16 @@ class LidSim:
         self.wrist_target = wrist_start
         self.holding = False
         self.steps = 0
-        self.wrist_limit_hits = 0
         self._lid_raw = self._read_lid_yaw()
         self.lid_angle = 0.0
-        self.history = []          # one row per step: time, lid angle, wrist angle, holding
+        self.history = []
         self._settle(self.arm_above, -1)   # move to the start posture, above the lid
+        # the episode starts now: time, lid angle and counters from zero
+        self.steps = 0
+        self.grasps = 0
+        self.wrist_limit_hits = 0
+        self.lid_angle = 0.0
+        self.history = []          # one row per step: time, lid, wrist, wrist target, grip command
         return self
 
     # --- what we can read ---
@@ -157,10 +162,10 @@ class LidSim:
         lid_raw = self._read_lid_yaw()
         self.lid_angle += wrap(lid_raw - self._lid_raw)
         self._lid_raw = lid_raw
-        self.history.append((self.time(), self.lid_angle, self.wrist(), self.holding))
+        self.history.append((self.time(), self.lid_angle, self.wrist(), self.wrist_target, grip))
 
     def _settle(self, arm, grip, max_steps=60):
-        """Keeps the same command until the wrist is within 1 degree of its target."""
+        """Keeps the same command until the wrist is within 1 degree of its target (3 s max)."""
         for _ in range(max_steps):
             self._step(arm, grip)
             if abs(self.wrist() - self.wrist_target) < 1:
@@ -175,6 +180,7 @@ class LidSim:
         for _ in range(10):
             self._step(self.arm_grasp, 1)
         self.holding = True
+        self.grasps += 1
 
     def release(self):
         """Opens the gripper and moves up."""
