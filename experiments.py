@@ -1,7 +1,11 @@
-"""Runs the three strategies on every clip, for several starting wrist angles.
+"""Runs the three strategies on my clips, in two sweeps.
 
-Writes one row per episode to results/episodes.csv, and every episode's
-step-by-step history to results/histories.npz (used to train the world model).
+1. Starting wrist angle (Panda range): every clip, 6 starting angles.
+   -> results/episodes.csv, and every episode's step-by-step history in
+      results/histories.npz (used to train the world model).
+2. Wrist range: the 360 and 540 degree clips, wrist starting at 0, with the
+   wrist limited to +-30 ... +-166 degrees (166 is the real Panda).
+   -> results/wrist_range.csv
 
 Usage:
     python experiments.py
@@ -16,13 +20,15 @@ from sim import LidSim
 from strategies import anticipatory, faithful, load_pushes, load_total, robot_style
 
 WRIST_STARTS = [-120, -60, 0, 60, 120, 150]   # degrees; 45 is the robosuite default
+WRIST_LIMITS = [30, 45, 60, 90, 120, 166]      # degrees; a human hand turns a lid by about 55 per push
+STRATEGIES = ["faithful", "robot_style", "anticipatory"]
 CLIPS = sorted({r["clip"] for r in csv.DictReader(open("data/pushes.csv"))})
 
 
-def run_episode(sim, strategy, clip, wrist_start):
+def run_episode(sim, strategy, clip, wrist_start, wrist_limit=166):
     sizes, durations = load_pushes(clip)
     target = load_total(clip)
-    sim.reset(wrist_start)
+    sim.reset(wrist_start, wrist_limit)
     if strategy == "faithful":
         faithful(sim, sizes, durations)
     elif strategy == "robot_style":
@@ -30,7 +36,7 @@ def run_episode(sim, strategy, clip, wrist_start):
     else:
         anticipatory(sim, target)
     return {
-        "clip": clip, "strategy": strategy, "wrist_start": wrist_start,
+        "clip": clip, "strategy": strategy, "wrist_start": wrist_start, "wrist_limit": wrist_limit,
         "target_deg": round(target, 1),
         "lid_deg": round(sim.lid_angle, 1),
         "error_deg": round(sim.lid_angle - target, 1),
@@ -42,22 +48,40 @@ def run_episode(sim, strategy, clip, wrist_start):
     }
 
 
-def main():
-    os.makedirs("results", exist_ok=True)
-    sim = LidSim()
-    rows, histories = [], {}
-    for clip in CLIPS:
-        for wrist_start in WRIST_STARTS:
-            for strategy in ["faithful", "robot_style", "anticipatory"]:
-                row = run_episode(sim, strategy, clip, wrist_start)
-                rows.append(row)
-                histories[f"{clip}|{wrist_start}|{strategy}"] = np.array(sim.history, dtype=float)
-                print(" | ".join(f"{k} {v}" for k, v in row.items()))
-    with open("results/episodes.csv", "w", newline="") as f:
+def save(rows, path):
+    with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
         writer.writerows(rows)
+
+
+def sweep_wrist_start(sim):
+    rows, histories = [], {}
+    for clip in CLIPS:
+        for wrist_start in WRIST_STARTS:
+            for strategy in STRATEGIES:
+                rows.append(run_episode(sim, strategy, clip, wrist_start))
+                histories[f"{clip}|{wrist_start}|{strategy}"] = np.array(sim.history, dtype=float)
+                print(rows[-1])
+    save(rows, "results/episodes.csv")
     np.savez_compressed("results/histories.npz", **histories)
+
+
+def sweep_wrist_range(sim):
+    rows = []
+    for clip in [c for c in CLIPS if c[6:9] in ("360", "540")]:
+        for wrist_limit in WRIST_LIMITS:
+            for strategy in STRATEGIES:
+                rows.append(run_episode(sim, strategy, clip, 0, wrist_limit))
+                print(rows[-1])
+    save(rows, "results/wrist_range.csv")
+
+
+def main():
+    os.makedirs("results", exist_ok=True)
+    sim = LidSim()
+    sweep_wrist_start(sim)
+    sweep_wrist_range(sim)
 
 
 if __name__ == "__main__":

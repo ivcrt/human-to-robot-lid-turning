@@ -10,10 +10,7 @@ import csv
 
 import numpy as np
 
-from sim import WRIST_LIMIT, WRIST_MARGIN
-
-RETURN_SPEED = 180                                 # deg/s, open gripper going back
-FULL_RANGE = 2 * (WRIST_LIMIT - WRIST_MARGIN)      # largest stroke, limit to limit: 322 deg
+RETURN_SPEED = 180      # deg/s, open gripper going back
 
 
 def load_pushes(clip, path="data/pushes.csv"):
@@ -59,7 +56,7 @@ def anticipatory(sim, total, speed=90, tol=5):
     """Before each grasp, turns the open gripper back so that the next stroke fits before the limit."""
     turned = 0
     while turned < total - tol:
-        stroke = min(total - turned, FULL_RANGE)
+        stroke = min(total - turned, sim.full_range())
         if sim.room_ccw() < stroke:                            # not enough room: prepare first
             sim.turn(-(stroke - sim.room_ccw()), RETURN_SPEED)  # gripper still open
         sim.grasp()

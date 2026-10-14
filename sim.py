@@ -77,8 +77,13 @@ class LidSim:
                               horizon=100000, initialization_noise=None)
         self.robot = self.env.robots[0]
 
-    def reset(self, wrist_start=45.0):
-        """New episode with joint 7 at wrist_start (45 is the robosuite default)."""
+    def reset(self, wrist_start=45.0, wrist_limit=WRIST_LIMIT):
+        """New episode with joint 7 at wrist_start (45 is the robosuite default).
+
+        wrist_limit < 166 simulates a wrist with less range than the Panda's,
+        e.g. closer to a human hand: strokes stop at +-wrist_limit.
+        """
+        self.wrist_limit = wrist_limit
         self.obs = self.env.reset()
         self.lid_pos = self.obs["cube_pos"].copy()
         q = self.obs["robot0_joint_pos"].copy()
@@ -111,11 +116,15 @@ class LidSim:
 
     def room_ccw(self):
         """Counterclockwise lid rotation still possible before the wrist limit."""
-        return self.wrist_target - (-WRIST_LIMIT + WRIST_MARGIN)
+        return self.wrist_target - (-self.wrist_limit + WRIST_MARGIN)
 
     def room_cw(self):
         """Clockwise rotation possible before the other wrist limit."""
-        return (WRIST_LIMIT - WRIST_MARGIN) - self.wrist_target
+        return (self.wrist_limit - WRIST_MARGIN) - self.wrist_target
+
+    def full_range(self):
+        """Largest stroke the wrist allows, from one limit to the other."""
+        return 2 * (self.wrist_limit - WRIST_MARGIN)
 
     def lid_drift(self):
         """How far the lid has slid on the table, in metres."""
