@@ -1,2 +1,6 @@
 numpy
 opencv-python-headless
+robosuite
+mujoco==3.3.0
+torch
+matplotlib
