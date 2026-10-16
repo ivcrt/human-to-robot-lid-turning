@@ -99,7 +99,7 @@ transfers from my data is the rhythm, not the size of my movements.
 
 **The anticipatory strategy has a cost.** It is the fastest on the real Panda range, but it
 always ends with the wrist against its limit (0 degrees of room left), while the two others
-keep about 160 degrees for whatever comes next.
+keep between 130 and 220 degrees for whatever comes next.
 
 Times are identical from one run to another, but final errors vary by about 2 degrees, so I
 only compare errors when the difference is larger than that.
@@ -169,3 +169,6 @@ I used Claude (an AI assistant) throughout this project, to debug, to write much
 simulation plumbing and the world model code, and to review my writing. I designed the
 experiment, filmed and measured the data, wrote the measurement and strategy code, and
 reviewed every file until I could explain it.
+I filmed the clips on 11 October and explored the measurement in a Colab notebook
+(camera setup, the three tries of section 3) before creating this repository on
+13 October; the repository contains the cleaned-up pipeline, not the exploration.
