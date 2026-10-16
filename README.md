@@ -16,6 +16,8 @@ question of this project: should the robot copy my strategy, or adapt it to its 
 
 ## 2. My data
 
+<img src="figures/clip_frame.png" width="320" alt="A frame from one of my clips: my left hand holds the jar, my right hand turns the lid with the fingers">
+
 I filmed myself turning the lid of a jar, with the phone fixed 50 cm above the table and
 looking down, close to my own point of view. The jar stood on a cutting mat with a 5 cm grid,
 centred with a cross drawn under it. A black line drawn across the lid was aligned with a line
