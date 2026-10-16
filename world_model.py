@@ -106,6 +106,16 @@ class WorldModel:
                 total += loss.item() * len(idx)
             print(f"epoch {epoch + 1:2d} | train loss {total / len(xs):.4f}")
 
+    @classmethod
+    def load(cls, path="results/world_model.pt"):
+        saved = torch.load(path, weights_only=False)
+        model = cls.__new__(cls)
+        for key in ["x_mean", "x_std", "y_mean", "y_std"]:
+            setattr(model, key, saved[key])
+        model.net = DynamicsMLP(len(model.x_mean), len(model.y_mean))
+        model.net.load_state_dict(saved["net"])
+        return model
+
     def predict(self, x):
         """Lid and wrist change (deg) for each row of x."""
         with torch.no_grad():
